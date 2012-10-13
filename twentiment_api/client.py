@@ -40,4 +40,4 @@ class Client(object):
         if result.startswith("OK "):
             return float(result.split(" ", 1)[1])
         else:
-            return ClientError(result)
+            raise ClientError(result)

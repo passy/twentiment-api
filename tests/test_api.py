@@ -6,6 +6,8 @@ Test suite for the API module.
 
 import json
 import urllib
+import mock
+import contextlib
 from unittest2 import TestCase, TestSuite
 from twentiment_api.application import create_app
 
@@ -28,33 +30,65 @@ class ApiTestCase(TestCase):
         self.ctx.pop()
 
 
+class ClientTestCase(TestCase):
+    @contextlib.contextmanager
+    def _mock_socket(self):
+        with mock.patch('twentiment_api.client.zmq', spec=True) as zmq:
+            yield zmq.Context.return_value.socket.return_value
+
+    def test_send(self):
+        from twentiment_api.client import Client
+
+        with self._mock_socket() as socket:
+            client = Client("localhost", 10001)
+            client.guess("Hello, World!")
+
+            socket.send_unicode.assert_called_once_with("GUESS Hello, World!")
+
+    def test_okay(self):
+        from twentiment_api.client import Client
+
+        with self._mock_socket() as socket:
+            socket.recv_string.return_value = "OK 0.5"
+
+            client = Client("localhost", 10001)
+            response = client.guess("Hello, World!")
+
+            self.assertEquals(response, 0.5)
+
+    def test_error(self):
+        from twentiment_api.client import Client, ClientError
+
+        with self._mock_socket() as socket:
+            socket.recv_string.return_value = "ERROR UNKNOWN_COMMAND"
+
+            client = Client("localhost", 10001)
+            call = lambda: client.guess("Hello, World!")
+            self.assertRaises(ClientError, call)
+
+
 class LiveGuessApiTestCase(ApiTestCase):
     """Test case against the live API populated with samples/few_tweets.json"""
 
-    def test_positive(self):
+    def _send_message(self, message):
         response = self.client.get("/v1/guess?" + urllib.urlencode({
-            'message': "I like my best friend."
+            'message': message
         }))
         self.assertEqual(200, response.status_code)
-        data = json.loads(response.data)
+        return json.loads(response.data)
+
+    def test_positive(self):
+        data = self._send_message("I like my best friend.")
         self.assertEqual(data['score'], 0.5)
         self.assertEqual(data['label'], 'positive')
 
     def test_negative(self):
-        response = self.client.get("/v1/guess?" + urllib.urlencode({
-            'message': "I hate my worst enemy."
-        }))
-        self.assertEqual(200, response.status_code)
-        data = json.loads(response.data)
+        data = self._send_message("I hate my worst enemy.")
         self.assertEqual(data['score'], -0.5)
         self.assertEqual(data['label'], 'negative')
 
     def test_neutral_gibberisch(self):
-        response = self.client.get("/v1/guess?" + urllib.urlencode({
-            'message': "Babbel quabbel wrabble."
-        }))
-        self.assertEqual(200, response.status_code)
-        data = json.loads(response.data)
+        data = self._send_message("Babbel quabbel wrabble.")
         self.assertEqual(data['score'], 0.0)
         self.assertEqual(data['label'], 'neutral')
 
@@ -67,6 +101,9 @@ def load_tests(loader, standard_tests, pattern):
     """Loads the tests from this module"""
 
     suite = TestSuite()
-    suite.addTest(loader.loadTestsFromTestCase(LiveGuessApiTestCase))
+    # Only enable if you have a local server running.
+    # TODO: Consider automatic skipping if zmq fails to connect
+    # suite.addTest(loader.loadTestsFromTestCase(LiveGuessApiTestCase))
+    suite.addTest(loader.loadTestsFromTestCase(ClientTestCase))
 
     return suite
