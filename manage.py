@@ -8,7 +8,7 @@ Management script for the twentiment_api Flask project.
 
 import sys
 import os
-from flaskext.script import Manager, Server
+from flask.ext.script import Manager, Server
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))

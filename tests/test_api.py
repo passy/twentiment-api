@@ -27,7 +27,7 @@ class LiveGuessApiTestCase(ApiTestCase):
     """Test case against the live API populated with samples/few_tweets.json"""
 
     def test_positive(self):
-        response = self.client.get("/v1/guess/" + urllib.urlencode({
+        response = self.client.get("/v1/guess?" + urllib.urlencode({
             'message': "I like my best friend."
         }))
         self.assertEqual(200, response.status_code)
@@ -36,7 +36,7 @@ class LiveGuessApiTestCase(ApiTestCase):
         self.assertEqual(data['label'], 'positive')
 
     def test_negative(self):
-        response = self.client.get("/v1/guess/" + urllib.urlencode({
+        response = self.client.get("/v1/guess?" + urllib.urlencode({
             'message': "I hate my worst enemy."
         }))
         self.assertEqual(200, response.status_code)
@@ -45,7 +45,7 @@ class LiveGuessApiTestCase(ApiTestCase):
         self.assertEqual(data['label'], 'negative')
 
     def test_neutral_gibberisch(self):
-        response = self.client.get("/v1/guess/" + urllib.urlencode({
+        response = self.client.get("/v1/guess?" + urllib.urlencode({
             'message': "Babbel quabbel wrabble."
         }))
         self.assertEqual(200, response.status_code)
@@ -54,7 +54,7 @@ class LiveGuessApiTestCase(ApiTestCase):
         self.assertEqual(data['label'], 'neutral')
 
     def test_bad_request(self):
-        response = self.client.get("/v1/guess/")
+        response = self.client.get("/v1/guess?")
         self.assertEqual(400, response.status_code)
 
 
