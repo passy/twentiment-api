@@ -11,8 +11,13 @@ from twentiment_api.application import create_app
 
 
 class ApiTestCase(TestCase):
+    config = {
+        'TWENTIMENT_HOST': "localhost",
+        'TWENTIMENT_PORT': 10001
+    }
+
     def setUp(self):
-        self.app = create_app()
+        self.app = create_app(self.config)
         self.app.testing = True
         self.ctx = self.app.test_request_context()
         self.ctx.push()
