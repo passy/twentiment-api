@@ -97,6 +97,39 @@ class LiveGuessApiTestCase(ApiTestCase):
         self.assertEqual(400, response.status_code)
 
 
+class CORSTestCase(ApiTestCase):
+    """Tests for some CORS stuff."""
+
+    def setUp(self):
+        config = self.config.copy()
+        self.config = config
+
+        config['CORS_ENABLED'] = True
+        config['CORS_ORIGIN'] = "localhost"
+
+        ApiTestCase.setUp(self)
+
+    def test_preflight(self):
+        response = self.client.open("/something", method='OPTIONS', headers={
+            'origin': "localhost"
+        })
+        self.assertEqual(response.status_code, 200)
+
+    def test_nopreflight(self):
+        response = self.client.open("/something", method='OPTIONS')
+        self.assertEqual(response.status_code, 404)
+
+    def test_headers(self):
+        with mock.patch('twentiment_api.api.Client', spec=True) as Client:
+            Client.from_config.return_value.guess.return_value = 0.5
+
+            response = self.client.get("/v1/guess?message=Hello", headers={
+                'origin': "localhost"
+            })
+            self.assertEqual(response.headers['Access-Control-Allow-Origin'],
+                            "localhost")
+
+
 def load_tests(loader, standard_tests, pattern):
     """Loads the tests from this module"""
 
@@ -105,5 +138,6 @@ def load_tests(loader, standard_tests, pattern):
     # TODO: Consider automatic skipping if zmq fails to connect
     # suite.addTest(loader.loadTestsFromTestCase(LiveGuessApiTestCase))
     suite.addTest(loader.loadTestsFromTestCase(ClientTestCase))
+    suite.addTest(loader.loadTestsFromTestCase(CORSTestCase))
 
     return suite
