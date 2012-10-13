@@ -66,6 +66,15 @@ class ClientTestCase(TestCase):
             call = lambda: client.guess("Hello, World!")
             self.assertRaises(ClientError, call)
 
+    def test_unicode(self):
+        """Smoke regression test for unicode messages"""
+        from twentiment_api.client import Client
+
+        with self._mock_socket():
+            client = Client("localhost", 10001)
+            # This used to blow the formatting up.
+            client.guess(u'@laliminati LAL\u0130 2500 OMAMA YARDIM ET X')
+
 
 class LiveGuessApiTestCase(ApiTestCase):
     """Test case against the live API populated with samples/few_tweets.json"""

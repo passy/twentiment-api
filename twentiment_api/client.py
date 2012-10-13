@@ -33,11 +33,11 @@ class Client(object):
         return cls(config['TWENTIMENT_HOST'], config['TWENTIMENT_PORT'])
 
     def guess(self, message):
-        self.socket.send_unicode("GUESS {}".format(message))
+        self.socket.send_unicode(u"GUESS {}".format(message))
         return self._handle_guess_result(self.socket.recv_string())
 
     def _handle_guess_result(self, result):
-        if result.startswith("OK "):
-            return float(result.split(" ", 1)[1])
+        if result.startswith(u"OK "):
+            return float(result.split(u" ", 1)[1])
         else:
             raise ClientError(result)
